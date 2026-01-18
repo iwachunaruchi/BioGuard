@@ -23,23 +23,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const fetchingRef = React.useRef<{ inFlight: boolean; lastUserId?: string }>({ inFlight: false, lastUserId: undefined });
+  const mountedRef = React.useRef(true);
 
   useEffect(() => {
     checkUser();
     
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session) {
-        setSession(session);
-        await fetchUserProfile(session.user.id);
-      } else {
-        setSession(null);
-        setUser(null);
+      try {
+        if (!mountedRef.current) return;
+        if (session) {
+          setSession(session);
+          if (!fetchingRef.current.inFlight || fetchingRef.current.lastUserId !== session.user.id) {
+            fetchingRef.current.inFlight = true;
+            fetchingRef.current.lastUserId = session.user.id;
+            await fetchUserProfile(session.user.id);
+            fetchingRef.current.inFlight = false;
+          }
+        } else {
+          setSession(null);
+          setUser(null);
+        }
+      } catch (e: any) {
+        const msg = String(e?.message || '');
+        if (!msg.toLowerCase().includes('abort')) {
+          console.error('Error fetching user profile:', e);
+        }
+      } finally {
+        if (mountedRef.current) setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => {
       authListener.subscription.unsubscribe();
+      mountedRef.current = false;
     };
   }, []);
 
@@ -48,10 +65,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setSession(session);
-        await fetchUserProfile(session.user.id);
+        if (!fetchingRef.current.inFlight || fetchingRef.current.lastUserId !== session.user.id) {
+          fetchingRef.current.inFlight = true;
+          fetchingRef.current.lastUserId = session.user.id;
+          await fetchUserProfile(session.user.id);
+          fetchingRef.current.inFlight = false;
+        }
       }
     } catch (error) {
-      console.error('Error checking user:', error);
+      const msg = String((error as any)?.message || '');
+      if (!msg.toLowerCase().includes('abort')) {
+        console.error('Error checking user:', error);
+      }
     } finally {
       setLoading(false);
     }

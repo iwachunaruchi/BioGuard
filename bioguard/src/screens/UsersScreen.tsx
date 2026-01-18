@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { userService } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { User } from '../types';
 
 interface UsersScreenProps {
@@ -13,6 +14,7 @@ const UsersScreen: React.FC<UsersScreenProps> = ({ navigation }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const { session } = useAuth();
 
   const roles = [
     { label: 'Todos', value: '' },
@@ -36,14 +38,36 @@ const UsersScreen: React.FC<UsersScreenProps> = ({ navigation }) => {
     visitor: 'Visitante',
   };
 
+  const loadIdRef = React.useRef(0);
   useEffect(() => {
-    loadUsers();
+    const id = ++loadIdRef.current;
+    const t = setTimeout(() => {
+      loadUsers(id);
+    }, 200);
+    return () => clearTimeout(t);
   }, [searchTerm, selectedRole]);
 
-  const loadUsers = async () => {
+  const loadUsers = async (id?: number) => {
     try {
       setLoading(true);
-      const data = await userService.getUsers(searchTerm, selectedRole);
+      console.log('UsersScreen: sesión', { userId: session?.user?.id, email: session?.user?.email });
+      let data: User[] = [];
+      try {
+        data = await userService.getUsersRPC(searchTerm, selectedRole);
+        console.log('UsersScreen: RPC users_enriched respuesta', { count: data.length, sample: data.slice(0, 3) });
+      } catch (_e) {
+        console.log('UsersScreen: RPC no disponible, usando getUsers. error=', (_e as any)?.message);
+        data = await userService.getUsers(searchTerm, selectedRole);
+      }
+      console.log('UsersScreen: getUsers respuesta', { count: data.length, sample: data.slice(0, 3) });
+      if (id && id !== loadIdRef.current) {
+        console.log('UsersScreen: respuesta obsoleta ignorada');
+        return;
+      }
+      const missingEmail = data.filter(u => !u.email);
+      if (missingEmail.length) {
+        console.log('UsersScreen: usuarios sin email', { count: missingEmail.length, ids: missingEmail.map(u => u.id).slice(0, 10) });
+      }
       setUsers(data);
     } catch (error) {
       console.error('Error loading users:', error);

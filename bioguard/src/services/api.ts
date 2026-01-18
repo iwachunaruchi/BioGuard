@@ -15,10 +15,65 @@ export const userService = {
       query = query.eq('role', role);
     }
     
-    const { data, error } = await query.order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    return data as User[];
+    try {
+      const { data, error } = await query.order('created_at', { ascending: false });
+      if (error) {
+        const msg = String(error.message || '');
+        if (msg.toLowerCase().includes('abort')) {
+          const retry = await query.order('created_at', { ascending: false });
+          if (retry.error) throw retry.error;
+          return retry.data as User[];
+        }
+        throw error;
+      }
+      return data as User[];
+    } catch (e: any) {
+      const msg = String(e?.message || '');
+      if (msg.toLowerCase().includes('abort')) return [];
+      throw e;
+    }
+  },
+  async getUsersRPC(search?: string, role?: string) {
+    try {
+      const { data, error } = await supabase.rpc('users_enriched', {
+        search: search && search.trim() !== '' ? search : null,
+        role_filter: role && role.trim() !== '' ? role : null,
+      });
+      if (error) {
+        const msg = String(error.message || '');
+        if (msg.toLowerCase().includes('abort')) {
+          const retry = await supabase.rpc('users_enriched', {
+            search: search && search.trim() !== '' ? search : null,
+            role_filter: role && role.trim() !== '' ? role : null,
+          });
+          if (retry.error) throw retry.error;
+          return retry.data as User[];
+        }
+        throw error;
+      }
+      return (data ?? []) as User[];
+    } catch (e: any) {
+      const msg = String(e?.message || '');
+      if (msg.toLowerCase().includes('abort')) return [];
+      throw e;
+    }
+  },
+  async getUsersEnrichedAPI(accessToken: string, search?: string, role?: string) {
+    if (!API_BASE_URL) throw new Error('API_BASE_URL no configurado');
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (role) params.set('role', role);
+    const res = await fetch(`${API_BASE_URL}/api/users/enriched?${params.toString()}`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || 'Error cargando usuarios enriquecidos');
+    }
+    const json = await res.json();
+    return (json.users ?? []) as User[];
   },
 
   // Crear nuevo usuario

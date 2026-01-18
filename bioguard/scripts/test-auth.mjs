@@ -15,7 +15,7 @@ function loadEnv(envPath) {
 }
 
 async function main() {
-  const envPath = path.resolve(process.cwd(), '..', '.env')
+  const envPath = path.resolve(process.cwd(), 'bioguard', '.env')
   if (fs.existsSync(envPath)) {
     loadEnv(envPath)
   } else {

@@ -32,7 +32,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     setLoading(true);
     try {
       await signIn(email, password);
-      navigation.replace('Dashboard');
+      // Navegación se controlará por AppNavigator al cambiar session
     } catch (error: any) {
       Alert.alert('Error de inicio de sesión', error.message);
     } finally {

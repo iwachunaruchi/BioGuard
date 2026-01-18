@@ -26,7 +26,7 @@ function parseArgs() {
 
 async function main() {
   // Load .env from project root (bioguard/.env)
-  const envPath = path.resolve(process.cwd(), '..', '.env')
+  const envPath = path.resolve(process.cwd(), 'bioguard', '.env')
   loadEnv(envPath)
 
   const url = process.env.EXPO_PUBLIC_SUPABASE_URL
