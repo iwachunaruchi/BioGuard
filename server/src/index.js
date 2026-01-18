@@ -158,11 +158,11 @@ app.post('/people', authMiddleware, upload.single('photo'), async (req, res) => 
   const uploadStream = gridfsBucket.openUploadStream(`${name || 'person'}.jpg`, { contentType: 'image/jpeg' })
   uploadStream.end(photoBuffer)
   uploadStream.on('error', () => res.status(500).json({ message: 'Photo upload error' }))
-  uploadStream.on('finish', async file => {
+  uploadStream.on('finish', async () => {
     const person = await Person.create({
       name,
       listType: listType === 'blacklist' ? 'blacklist' : 'whitelist',
-      photoFileId: file._id,
+      photoFileId: uploadStream.id,
       createdBy: new ObjectId(req.user.id),
       createdAt: new Date(),
       updatedAt: new Date()
