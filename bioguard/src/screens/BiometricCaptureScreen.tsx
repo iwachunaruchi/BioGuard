@@ -5,11 +5,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  SafeAreaView,
   ScrollView,
   Image,
 } from 'react-native';
-import { Camera } from 'expo-camera';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { enrollService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -20,12 +20,13 @@ interface BiometricCaptureScreenProps {
 
 const BiometricCaptureScreen: React.FC<BiometricCaptureScreenProps> = ({ navigation, route }) => {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-  const [type, setType] = useState(Camera.Constants.Type.front);
+  const [facing, setFacing] = useState<'front' | 'back'>('front');
   const [capturedPhotos, setCapturedPhotos] = useState<string[]>([]);
   const [currentAngle, setCurrentAngle] = useState(0);
   const [loading, setLoading] = useState(false);
-  const cameraRef = useRef<Camera>(null);
+  const cameraRef = useRef<any>(null);
   const { session, user } = useAuth();
+  const [permission, requestPermission] = useCameraPermissions();
 
   const angles = [
     { name: 'front', label: 'Frente', instruction: 'Mira directamente a la cámara' },
@@ -37,10 +38,14 @@ const BiometricCaptureScreen: React.FC<BiometricCaptureScreenProps> = ({ navigat
 
   useEffect(() => {
     (async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === 'granted');
+      if (!permission || !permission.granted) {
+        const res = await requestPermission();
+        setHasPermission(!!res?.granted);
+      } else {
+        setHasPermission(true);
+      }
     })();
-  }, []);
+  }, [permission]);
 
   const takePicture = async () => {
     if (cameraRef.current) {
@@ -105,6 +110,10 @@ const BiometricCaptureScreen: React.FC<BiometricCaptureScreenProps> = ({ navigat
     setCurrentAngle(index);
   };
 
+  const toggleFacing = () => {
+    setFacing(prev => (prev === 'front' ? 'back' : 'front'));
+  };
+
   if (hasPermission === null) {
     return <View style={styles.container}><Text>Solicitando permisos de cámara...</Text></View>;
   }
@@ -142,9 +151,9 @@ const BiometricCaptureScreen: React.FC<BiometricCaptureScreenProps> = ({ navigat
         {/* Camera */}
         {currentAngle < angles.length && (
           <View style={styles.cameraContainer}>
-            <Camera
+            <CameraView
               style={styles.camera}
-              type={type}
+              facing={facing}
               ref={cameraRef}
             >
               <View style={styles.cameraOverlay}>
@@ -155,19 +164,30 @@ const BiometricCaptureScreen: React.FC<BiometricCaptureScreenProps> = ({ navigat
                   {angles[currentAngle]?.instruction}
                 </Text>
               </View>
-            </Camera>
+            </CameraView>
           </View>
         )}
 
         {/* Capture Button */}
         {currentAngle < angles.length && (
-          <TouchableOpacity
-            style={styles.captureButton}
-            onPress={takePicture}
-            disabled={loading}
-          >
-            <Text style={styles.captureButtonText}>📷 Capturar</Text>
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity
+              style={styles.captureButton}
+              onPress={takePicture}
+              disabled={loading}
+            >
+              <Text style={styles.captureButtonText}>📷 Capturar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.toggleButton}
+              onPress={toggleFacing}
+              disabled={loading}
+            >
+              <Text style={styles.toggleButtonText}>
+                {facing === 'front' ? 'Cambiar a Trasera' : 'Cambiar a Frontal'}
+              </Text>
+            </TouchableOpacity>
+          </>
         )}
 
         {/* Captured Photos */}
@@ -298,6 +318,18 @@ const styles = StyleSheet.create({
   captureButtonText: {
     color: '#ffffff',
     fontSize: 16,
+    fontWeight: '600',
+  },
+  toggleButton: {
+    backgroundColor: '#0EA5E9',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  toggleButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
     fontWeight: '600',
   },
   photosContainer: {
