@@ -78,7 +78,7 @@ const UsersScreen: React.FC<UsersScreenProps> = ({ navigation }) => {
   };
 
   const handleUserPress = (user: User) => {
-    navigation.navigate('UserDetail', { userId: user.id });
+    //navigation.navigate('UserDetail', { userId: user.id });
   };
 
   const handleNewUser = () => {
@@ -93,7 +93,6 @@ const UsersScreen: React.FC<UsersScreenProps> = ({ navigation }) => {
     <TouchableOpacity
       key={user.id}
       style={styles.userCard}
-      onPress={() => handleUserPress(user)}
     >
       <View style={styles.userInfo}>
         <View style={styles.userHeader}>
