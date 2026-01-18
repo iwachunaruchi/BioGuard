@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
 import { StorageService } from '../utils/storage';
+import { ApiService } from '../services/api';
 import { Person } from '../types';
 import { useAuth } from '../context/AuthContext';
 
@@ -32,7 +33,9 @@ export default function AddPersonScreen({ navigation, route }: any) {
         createdBy: user?.id || '',
       };
 
-      await StorageService.addPerson(newPerson);
+      const token = await StorageService.getUserToken();
+      if (!token) throw new Error('No token');
+      await ApiService.addPerson(token, { name: newPerson.name, listType: newPerson.listType, photoBase64: newPerson.photo });
       Alert.alert('Éxito', 'Persona registrada correctamente', [
         { text: 'OK', onPress: () => navigation.goBack() }
       ]);

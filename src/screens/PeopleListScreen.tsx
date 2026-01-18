@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, TextInput } from 'react-native';
 import { StorageService } from '../utils/storage';
+import { ApiService } from '../services/api';
 import { Person } from '../types';
 
 export default function PeopleListScreen({ navigation }: any) {
@@ -18,8 +19,19 @@ export default function PeopleListScreen({ navigation }: any) {
   }, [people, searchTerm, filterType]);
 
   const loadPeople = async () => {
-    const loadedPeople = await StorageService.getPeople();
-    setPeople(loadedPeople);
+    const token = await StorageService.getUserToken();
+    if (!token) return;
+    const loadedPeople = await ApiService.getPeople(token);
+    const normalized = loadedPeople.map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      photo: `${p.photoFileId}`, 
+      listType: p.listType,
+      createdAt: typeof p.createdAt === 'string' ? p.createdAt : new Date(p.createdAt).toISOString(),
+      updatedAt: typeof p.updatedAt === 'string' ? p.updatedAt : new Date(p.updatedAt).toISOString(),
+      createdBy: p.createdBy || '',
+    }));
+    setPeople(normalized);
   };
 
   const filterPeople = () => {
@@ -48,7 +60,9 @@ export default function PeopleListScreen({ navigation }: any) {
           text: 'Eliminar',
           style: 'destructive',
           onPress: async () => {
-            await StorageService.deletePerson(person.id);
+            const token = await StorageService.getUserToken();
+            if (!token) return;
+            await ApiService.deletePerson(token, person.id);
             loadPeople();
           }
         }

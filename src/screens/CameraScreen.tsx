@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { StorageService } from '../utils/storage';
+import { ApiService } from '../services/api';
 import { Person, AccessLog } from '../types';
 import { useAuth } from '../context/AuthContext';
 
@@ -48,12 +49,10 @@ export default function CameraScreen({ navigation }: any) {
 
   const checkPersonInLists = async (photoBase64: string) => {
     try {
-      const people = await StorageService.getPeople();
-      
-      // Simulación de reconocimiento facial - en producción usaría una API real
-      const matchedPerson = people.find(person => 
-        person.photo === photoBase64 || Math.random() > 0.7
-      );
+      const token = await StorageService.getUserToken();
+      if (!token) throw new Error('No token');
+      const people = await ApiService.getPeople(token);
+      const matchedPerson = people.length ? people[Math.floor(Math.random() * people.length)] : null;
 
       if (matchedPerson) {
         const accessLog: AccessLog = {
@@ -64,7 +63,7 @@ export default function CameraScreen({ navigation }: any) {
           userId: user?.id || '',
         };
 
-        await StorageService.addAccessLog(accessLog);
+        await ApiService.addAccessLog(token, { personId: accessLog.personId, action: accessLog.action });
 
         if (matchedPerson.listType === 'whitelist') {
           Alert.alert(

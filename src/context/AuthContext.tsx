@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AuthContextType, User } from '../types';
 import { StorageService } from '../utils/storage';
+import { ApiService } from '../services/api';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -24,11 +25,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const token = await StorageService.getUserToken();
       if (token) {
-        const users = await StorageService.getUsers();
-        const currentUser = users.find(u => u.id === token);
-        if (currentUser) {
-          setUser(currentUser);
-        }
+        const me = await ApiService.me(token);
+        setUser({
+          id: me.id,
+          email: me.email,
+          name: me.name,
+          role: me.role,
+          createdAt: typeof me.createdAt === 'string' ? me.createdAt : new Date(me.createdAt).toISOString(),
+        });
       }
     } catch (error) {
       console.error('Error checking auth state:', error);
@@ -39,15 +43,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const users = await StorageService.getUsers();
-      const foundUser = users.find(u => u.email === email && u.passwordHash === password);
-      
-      if (foundUser) {
-        await StorageService.saveUserToken(foundUser.id);
-        setUser(foundUser);
-        return true;
-      }
-      return false;
+      const { token } = await ApiService.login(email, password);
+      await StorageService.saveUserToken(token);
+      const me = await ApiService.me(token);
+      setUser({
+        id: me.id,
+        email: me.email,
+        name: me.name,
+        role: me.role,
+        createdAt: typeof me.createdAt === 'string' ? me.createdAt : new Date(me.createdAt).toISOString(),
+      });
+      return true;
     } catch (error) {
       console.error('Error during login:', error);
       return false;

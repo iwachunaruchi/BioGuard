@@ -40,6 +40,30 @@ npm start
 - **Email:** admin@bioguard.com
 - **Contraseña:** admin123
 
+## Backend y Base de Datos
+
+- API Node.js/Express con autenticación JWT y MongoDB (GridFS para fotos).
+- Despliegue con Docker Compose.
+
+### Variables de entorno (server/.env)
+```
+MONGO_URI=mongodb://mongodb:27017/bioguard
+JWT_SECRET=changeme
+ADMIN_EMAIL=admin@bioguard.com
+ADMIN_PASSWORD=admin123
+ADMIN_NAME=Administrador Principal
+```
+
+### Levantar con Docker
+```bash
+docker compose up --build -d
+```
+La API queda en http://localhost:3000, MongoDB en 27017 y Mongo Express en http://localhost:8081.
+
+### Integración de la App
+- La app usa JWT guardado en SecureStore y consume la API para login, gestión de personas y registros.
+- Si usas emulador Android: baseURL http://10.0.2.2:3000.
+
 ## Estructura del Proyecto
 
 ```
@@ -103,6 +127,14 @@ src/
 - Los datos se almacenan localmente en el dispositivo
 - En producción, se recomienda implementar hash de contraseñas (bcrypt)
 - El reconocimiento facial es simulado - en producción requeriría una API real
+
+## Endpoints principales (API)
+- POST /auth/login
+- GET /auth/me
+- GET/POST/PATCH/DELETE /users (admin)
+- GET/POST/PATCH/DELETE /people
+- GET /people/:id/photo
+- GET/POST /logs (GET admin)
 
 ## Contribuir
 
