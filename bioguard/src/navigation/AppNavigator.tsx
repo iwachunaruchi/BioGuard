@@ -9,6 +9,7 @@ import RegisterScreen from '../screens/RegisterScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import UsersScreen from '../screens/UsersScreen';
 import BiometricCaptureScreen from '../screens/BiometricCaptureScreen';
+import UserRegistrationScreen from '../screens/UserRegistrationScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -42,6 +43,7 @@ const AppNavigator: React.FC = () => {
           <>
             <Stack.Screen name="Dashboard" component={DashboardScreen} />
             <Stack.Screen name="Users" component={UsersScreen} />
+            <Stack.Screen name="UserRegistration" component={UserRegistrationScreen} />
             <Stack.Screen name="BiometricCapture" component={BiometricCaptureScreen} />
           </>
         ) : (
