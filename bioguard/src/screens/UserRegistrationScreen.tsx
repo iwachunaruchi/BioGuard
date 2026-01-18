@@ -11,6 +11,7 @@ import {
   ScrollView,
 } from 'react-native'
 import { supabase } from '../config/supabase'
+import { useAuth } from '../context/AuthContext'
 
 const ROLES = ['admin', 'whitelist', 'blacklist', 'visitor']
 
@@ -21,6 +22,7 @@ const UserRegistrationScreen: React.FC<any> = ({ navigation }) => {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [role, setRole] = useState('visitor')
   const [loading, setLoading] = useState(false)
+  const { session } = useAuth()
 
   const handleSubmit = async () => {
     if (!fullName || !email || !password || !confirmPassword || !role) {
@@ -46,9 +48,10 @@ const UserRegistrationScreen: React.FC<any> = ({ navigation }) => {
       const userId = data.user?.id
       if (!userId) throw new Error('No se obtuvo el ID de usuario')
 
+      const creatorId = session?.user?.id
       const { error: insertError } = await supabase
         .from('users')
-        .insert([{ id: userId, full_name: fullName, role }])
+        .insert([{ id: userId, full_name: fullName, role, created_by: creatorId }])
       if (insertError) throw insertError
 
       Alert.alert('Éxito', 'Usuario registrado correctamente', [
@@ -197,4 +200,3 @@ const styles = StyleSheet.create({
 })
 
 export default UserRegistrationScreen
-
