@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { AppState, Platform } from 'react-native';
 import { supabase } from '../config/supabase';
 import { User, AuthState } from '../types';
 
@@ -58,6 +59,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       authListener.subscription.unsubscribe();
       mountedRef.current = false;
     };
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'background') {
+        supabase.auth.signOut().catch(() => {});
+      }
+    });
+    return () => sub.remove();
   }, []);
 
   const checkUser = async () => {
