@@ -161,6 +161,10 @@ export const enrollService = {
     full_name?: string;
     role?: string;
   }, accessToken: string) {
+    if (!API_BASE_URL) throw new Error('API_BASE_URL no configurado')
+    if (!accessToken) throw new Error('Sin token de acceso: inicia sesión y reintenta')
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 15000)
     const res = await fetch(`${API_BASE_URL}/api/enroll`, {
       method: 'POST',
       headers: {
@@ -168,7 +172,9 @@ export const enrollService = {
         'Authorization': `Bearer ${accessToken}`,
       },
       body: JSON.stringify(payload),
+      signal: controller.signal,
     });
+    clearTimeout(timeout)
     if (!res.ok) {
       const text = await res.text();
       throw new Error(text || 'Error al enrolar rostro');

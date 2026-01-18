@@ -35,6 +35,8 @@ const BiometricCaptureScreen: React.FC<BiometricCaptureScreenProps> = ({ navigat
   ];
 
   const userId = route.params?.userId;
+  const targetFullName = route.params?.fullName;
+  const targetRole = route.params?.role;
 
   useEffect(() => {
     (async () => {
@@ -74,22 +76,24 @@ const BiometricCaptureScreen: React.FC<BiometricCaptureScreenProps> = ({ navigat
       Alert.alert('Error', 'Debes capturar al menos una foto');
       return;
     }
+    if (!userId && !targetFullName) {
+      Alert.alert('Error', 'Falta el nombre del usuario a crear');
+      return;
+    }
 
     setLoading(true);
     try {
       for (let i = 0; i < capturedPhotos.length; i++) {
         const photo = capturedPhotos[i];
         const angle = angles[i] || angles[0];
-        await enrollService.enrollFace(
-          {
-            image_base64: photo,
-            angle_type: angle.name,
-            user_id: userId,
-            full_name: user?.full_name,
-            role: user?.role,
-          },
-          session?.access_token || ''
-        );
+        const payload = {
+          image_base64: photo,
+          angle_type: angle.name,
+          ...(userId
+            ? { user_id: userId }
+            : { full_name: targetFullName, role: targetRole || 'visitor' }),
+        };
+        await enrollService.enrollFace(payload, session?.access_token || '');
       }
 
       Alert.alert(
