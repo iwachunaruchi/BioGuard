@@ -10,7 +10,8 @@ import {
   Image,
 } from 'react-native';
 import { Camera } from 'expo-camera';
-import { faceEncodingService, storageService } from '../services/api';
+import { enrollService } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 interface BiometricCaptureScreenProps {
   navigation: any;
@@ -24,6 +25,7 @@ const BiometricCaptureScreen: React.FC<BiometricCaptureScreenProps> = ({ navigat
   const [currentAngle, setCurrentAngle] = useState(0);
   const [loading, setLoading] = useState(false);
   const cameraRef = useRef<Camera>(null);
+  const { session, user } = useAuth();
 
   const angles = [
     { name: 'front', label: 'Frente', instruction: 'Mira directamente a la cámara' },
@@ -70,29 +72,19 @@ const BiometricCaptureScreen: React.FC<BiometricCaptureScreenProps> = ({ navigat
 
     setLoading(true);
     try {
-      // Simular procesamiento de encoding facial
-      // En una implementación real, aquí se usaría una librería de reconocimiento facial
       for (let i = 0; i < capturedPhotos.length; i++) {
         const photo = capturedPhotos[i];
         const angle = angles[i] || angles[0];
-        
-        // Generar un encoding simulado
-        const mockEncoding = Array.from({ length: 128 }, () => Math.random());
-        
-        // Subir imagen a Supabase Storage
-        const fileName = `face_${userId}_${angle.name}_${Date.now()}.jpg`;
-        const imageUrl = await storageService.uploadImage(
-          new File([photo], fileName, { type: 'image/jpeg' }),
-          `faces/${userId}/${fileName}`
+        await enrollService.enrollFace(
+          {
+            image_base64: photo,
+            angle_type: angle.name,
+            user_id: userId,
+            full_name: user?.full_name,
+            role: user?.role,
+          },
+          session?.access_token || ''
         );
-
-        // Guardar encoding en base de datos
-        await faceEncodingService.saveEncoding({
-          user_id: userId,
-          encoding: mockEncoding,
-          angle_type: angle.name,
-          image_url: imageUrl,
-        });
       }
 
       Alert.alert(

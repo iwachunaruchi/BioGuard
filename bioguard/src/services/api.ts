@@ -1,5 +1,6 @@
 import { supabase } from '../config/supabase';
 import { User, FaceEncoding, AccessLog } from '../types';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? '';
 
 export const userService = {
   // Obtener todos los usuarios
@@ -149,5 +150,29 @@ export const storageService = {
       .remove([path]);
     
     if (error) throw error;
+  },
+};
+
+export const enrollService = {
+  async enrollFace(payload: {
+    image_base64: string;
+    angle_type: string;
+    user_id?: string;
+    full_name?: string;
+    role?: string;
+  }, accessToken: string) {
+    const res = await fetch(`${API_BASE_URL}/api/enroll`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || 'Error al enrolar rostro');
+    }
+    return res.json();
   },
 };
