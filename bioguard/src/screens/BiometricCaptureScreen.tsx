@@ -28,11 +28,13 @@ const BiometricCaptureScreen: React.FC<BiometricCaptureScreenProps> = ({ navigat
   const { session, user } = useAuth();
   const [permission, requestPermission] = useCameraPermissions();
 
-  const angles = [
+  const baseAngles = [
     { name: 'front', label: 'Frente', instruction: 'Mira directamente a la cámara' },
     { name: 'left', label: 'Izquierda', instruction: 'Gira ligeramente la cabeza a la izquierda' },
     { name: 'right', label: 'Derecha', instruction: 'Gira ligeramente la cabeza a la derecha' },
   ];
+  const MAX_SESSION_PHOTOS = 3;
+  const [remainingAngles, setRemainingAngles] = useState<typeof baseAngles>(baseAngles);
 
   const userId = route.params?.userId;
   const targetFullName = route.params?.fullName;
@@ -49,7 +51,16 @@ const BiometricCaptureScreen: React.FC<BiometricCaptureScreenProps> = ({ navigat
     })();
   }, [permission]);
 
+  useEffect(() => {
+    setRemainingAngles(baseAngles.slice(0, MAX_SESSION_PHOTOS));
+    setCurrentAngle(0);
+  }, [userId]);
+
   const takePicture = async () => {
+    if (capturedPhotos.length >= remainingAngles.length) {
+      Alert.alert('Límite alcanzado', 'Ya capturaste todas las fotos permitidas');
+      return;
+    }
     if (cameraRef.current) {
       try {
         const photo = await cameraRef.current.takePictureAsync({
@@ -61,7 +72,7 @@ const BiometricCaptureScreen: React.FC<BiometricCaptureScreenProps> = ({ navigat
           const newPhoto = `data:image/jpeg;base64,${photo.base64}`;
           setCapturedPhotos(prev => [...prev, newPhoto]);
           
-          if (currentAngle < angles.length - 1) {
+          if (currentAngle < remainingAngles.length - 1) {
             setCurrentAngle(currentAngle + 1);
           }
         }
@@ -80,12 +91,16 @@ const BiometricCaptureScreen: React.FC<BiometricCaptureScreenProps> = ({ navigat
       Alert.alert('Error', 'Falta el nombre del usuario a crear');
       return;
     }
+    if (capturedPhotos.length > remainingAngles.length) {
+      Alert.alert('Error', 'Has excedido el número de fotos permitidas');
+      return;
+    }
 
     setLoading(true);
     try {
       for (let i = 0; i < capturedPhotos.length; i++) {
         const photo = capturedPhotos[i];
-        const angle = angles[i] || angles[0];
+        const angle = remainingAngles[i] || remainingAngles[0];
         const payload = {
           image_base64: photo,
           angle_type: angle.name,
@@ -147,13 +162,13 @@ const BiometricCaptureScreen: React.FC<BiometricCaptureScreenProps> = ({ navigat
         {/* Progress */}
         <View style={styles.progressContainer}>
           <Text style={styles.progressText}>
-            Paso {currentAngle + 1} de {angles.length}
+            Paso {Math.min(currentAngle + 1, remainingAngles.length)} de {remainingAngles.length}
           </Text>
-          <Text style={styles.angleLabel}>{angles[currentAngle]?.label}</Text>
+          <Text style={styles.angleLabel}>{remainingAngles[currentAngle]?.label}</Text>
         </View>
 
         {/* Camera */}
-        {currentAngle < angles.length && (
+        {currentAngle < remainingAngles.length && (
           <View style={styles.cameraContainer}>
             <CameraView
               style={styles.camera}
@@ -165,7 +180,7 @@ const BiometricCaptureScreen: React.FC<BiometricCaptureScreenProps> = ({ navigat
                   <View style={styles.faceFrame} />
                 </View>
                 <Text style={styles.instructionText}>
-                  {angles[currentAngle]?.instruction}
+                  {remainingAngles[currentAngle]?.instruction}
                 </Text>
               </View>
             </CameraView>
@@ -173,7 +188,7 @@ const BiometricCaptureScreen: React.FC<BiometricCaptureScreenProps> = ({ navigat
         )}
 
         {/* Capture Button */}
-        {currentAngle < angles.length && (
+        {currentAngle < remainingAngles.length && (
           <>
             <TouchableOpacity
               style={styles.captureButton}
@@ -202,7 +217,7 @@ const BiometricCaptureScreen: React.FC<BiometricCaptureScreenProps> = ({ navigat
               {capturedPhotos.map((photo, index) => (
                 <View key={index} style={styles.photoContainer}>
                   <Image source={{ uri: photo }} style={styles.photo} />
-                  <Text style={styles.photoLabel}>{angles[index]?.label}</Text>
+                  <Text style={styles.photoLabel}>{remainingAngles[index]?.label}</Text>
                   <TouchableOpacity
                     style={styles.retakeButton}
                     onPress={() => retakePhoto(index)}
