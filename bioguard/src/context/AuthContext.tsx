@@ -153,14 +153,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) throw error;
       if (data.user) {
-        // Crear perfil de usuario con rol 'visitor'
         const { error: profileError } = await supabase
           .from('users')
           .insert([
             {
               id: data.user.id,
               full_name: fullName,
-              role: 'visitor',
+              role: 'admin',
             },
           ]);
 
