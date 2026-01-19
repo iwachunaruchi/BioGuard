@@ -115,11 +115,44 @@ Una aplicación móvil de escaneo biométrico facial que permite el control de a
 
 ## 🚀 Despliegue
 
-### Despliegue en Expo
+### Despliegue con EAS (Expo Application Services)
+
+1. Autenticarse y configurar el proyecto
+   ```bash
+   npx eas-cli login
+   npx eas-cli build:configure
+   npx eas-cli update:configure
+   ```
+2. Construir Android (producción)
+   ```bash
+   npx eas-cli build -p android --profile production
+   ```
+3. Construir iOS (producción)
+   ```bash
+   npx eas-cli build -p ios --profile production
+   ```
+4. Enviar a tiendas
+   ```bash
+   npx eas-cli submit -p android --path <ruta-del-aab-o-apk>
+   npx eas-cli submit -p ios --path <ruta-del-ipa>
+   ```
+
+### Actualizaciones OTA (EAS Update)
 ```bash
-expo build:android
-expo build:ios
+npx eas-cli update --branch production --message "Primera versión"
 ```
+
+### Web (opcional)
+```bash
+npx expo export --platform web
+# sube la carpeta dist a tu hosting (Netlify/Vercel/S3)
+```
+
+## ✅ Checklist de verificación antes de publicar
+- Variables de entorno cargan correctamente en [supabase.ts](file:///d:/Sistemas%20Distribuidos/BioGuard/bioguard/src/config/supabase.ts) (URL y anon key)
+- Login y registro funcionan contra Supabase
+- Cámara y permisos operativos en [BiometricCaptureScreen](file:///d:/Sistemas%20Distribuidos/BioGuard/bioguard/src/screens/BiometricCaptureScreen.tsx)
+- Navegación estable en [AppNavigator](file:///d:/Sistemas%20Distribuidos/BioGuard/bioguard/src/navigation/AppNavigator.tsx)
 
 ### Despliegue de Supabase
 - Las funciones y políticas ya están configuradas

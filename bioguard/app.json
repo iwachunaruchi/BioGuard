@@ -3,6 +3,8 @@
     "name": "bioguard",
     "slug": "bioguard",
     "version": "1.0.0",
+    "scheme": "bioguard",
+    "runtimeVersion": { "policy": "appVersion" },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -13,9 +15,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bioguard.app"
     },
     "android": {
+      "package": "com.bioguard.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -25,6 +29,14 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "254ce88d-a6ae-479f-a007-0d84a31d2c83"
+      }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/254ce88d-a6ae-479f-a007-0d84a31d2c83"
     }
   }
 }
