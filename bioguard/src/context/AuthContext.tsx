@@ -63,12 +63,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     if (Platform.OS !== 'android') return;
-    const sub = AppState.addEventListener('change', (state) => {
+    const INACTIVITY_LOGOUT_MS = 60000;
+    let logoutTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const onStateChange = (state: string) => {
       if (state === 'background') {
-        supabase.auth.signOut().catch(() => {});
+        if (logoutTimer) clearTimeout(logoutTimer);
+        logoutTimer = setTimeout(() => {
+          supabase.auth.signOut().catch(() => {});
+        }, INACTIVITY_LOGOUT_MS);
+      } else {
+        if (logoutTimer) {
+          clearTimeout(logoutTimer);
+          logoutTimer = null;
+        }
       }
-    });
-    return () => sub.remove();
+    };
+
+    const sub = AppState.addEventListener('change', onStateChange);
+    return () => {
+      sub.remove();
+      if (logoutTimer) clearTimeout(logoutTimer);
+    };
   }, []);
 
   const checkUser = async () => {
